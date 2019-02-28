@@ -1,0 +1,145 @@
+$main-color: #fb0752; // #23517f;
+$caption-color: #2b455d;
+
+.__abm_timer {
+    white-space: nowrap;
+    text-align: center;
+    font-family: Roboto, sans-serif;
+
+    &_b1 {
+        display: inline-block;
+        margin: 0 22px;
+        vertical-align: top;
+    }
+
+    &_b1:first-child {
+        margin-left: 0;
+    }
+
+    &_b1:last-child {
+        margin-right: 0;
+    }
+
+    &_b2 {
+        position: relative;
+        background-color: #f6f6f6;
+        border-radius: 3px;
+        border: 1px solid #e3e9f0;
+        height: 72px;
+        line-height: 70px;
+        font-size: 42px;
+        text-align: center;
+        font-weight: 700;
+        color: $main-color;
+        box-sizing: border-box;
+        width: 62px;
+    }
+
+    &_b2::before, &_b2::after {
+        position: absolute;
+        content: '';
+        width: 6px;
+        height: 6px;
+        background-color: $main-color;
+        left: 100%;
+        margin-left: 19px;
+        animation: __abm_timer_dots 1000ms ease 0ms infinite;
+    }
+
+    &_b2::before {
+        top: 23px;
+    }
+
+    &_b2::after {
+        top: 40px;
+    }
+
+    &_b1:last-child &_b2::before,
+    &_b1:last-child &_b2::after {
+        display: none;
+    }
+
+    &_b3 {
+        text-align: center;
+        font-family: _roboto_condensed,sans-serif;
+        font-weight: 700;
+        color: $main-color;
+        font-size: 12px;
+        line-height: 12px;
+        text-transform: uppercase;
+        margin-top: 8px;
+    }
+
+    &_b4 {
+        display: inline;
+    }
+
+    &_b4:first-child {
+        margin-left: 0;
+    }
+
+    &_b4:last-child {
+        margin-right: 0;
+    }
+
+    @keyframes __abm_timer_dots {
+        0% {
+            opacity: 1;
+        }
+        60% {
+            opacity: 1;
+        }
+        80% {
+            opacity: 0;
+        }
+        100% {
+            opacity: 1;
+        }
+    }
+
+    &_b0 {
+        font-size: 0;
+    }
+
+    &_c0 {
+        color: $caption-color;
+    }
+
+    &_c0 span {
+        color: $main-color;
+    }
+
+    &_c1 {
+        font-size: 22px;
+        margin-bottom: 10px;
+    }
+
+    &_c2 {
+        font-size: 16px;
+    }
+
+    &_c3 {
+        font-size: 16px;
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+}
+
+@media (max-width: 479px) {
+    .__abm_timer {
+        &_c3 {
+            font-size: 14px;
+        }
+
+        &_b1 {
+            margin: 0 9px;
+        }
+
+        &_b2 {
+            &::before,
+            &::after {
+                margin-left: 6px;
+            }
+        }
+    }
+}
