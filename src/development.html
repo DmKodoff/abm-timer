@@ -10,12 +10,13 @@
     <div class="__abm_timer"
          data-redirect="/GB_seminar"
          data-days="yes"
-         data-starts="* 0"
+         data-offset="gb"
+         data-starts="0 0 20 * * * *"
          data-interval="24 * 3600"
-         data-duration="5"
-         data-c1="С %d1 %m1 по %d2 %m2"
-         data-c2="Марафон стартует {%d1 %m1 в 20:00 МСК}"
-         data-c3="Первое занятие марафона начнётся через:"
+         data-duration="5 * 3600 * 24"
+         data-caption1="С {d} {m} по {d2} {m2}"
+         data-caption2="Марафон стартует ({d} {m} в {h}:{i} {ct})"
+         data-caption3="Первое занятие марафона начнётся через:"
     ></div>
 
     <!-- {{name}} version: {{version}} -->
