@@ -33,25 +33,26 @@ $caption-color: #2b455d;
         color: $main-color;
         box-sizing: border-box;
         width: 62px;
-    }
 
-    &_b2::before, &_b2::after {
-        position: absolute;
-        content: '';
-        width: 6px;
-        height: 6px;
-        background-color: $main-color;
-        left: 100%;
-        margin-left: 19px;
-        animation: __abm_timer_dots 1000ms ease 0ms infinite;
-    }
+        &::before,
+        &::after {
+            position: absolute;
+            content: '';
+            width: 6px;
+            height: 6px;
+            background-color: $main-color;
+            left: 100%;
+            margin-left: 20px;
+            animation: __abm_timer_dots 1000ms ease 0ms infinite;
+        }
 
-    &_b2::before {
-        top: 23px;
-    }
+        &::before {
+            top: 22px;
+        }
 
-    &_b2::after {
-        top: 40px;
+        &::after {
+            bottom: 22px;
+        }
     }
 
     &_b1:last-child &_b2::before,
@@ -112,16 +113,38 @@ $caption-color: #2b455d;
     &_c1 {
         font-size: 22px;
         margin-bottom: 10px;
+        white-space: normal;
     }
 
     &_c2 {
         font-size: 16px;
+        white-space: normal;
     }
 
     &_c3 {
         font-size: 16px;
         margin-bottom: 10px;
         font-weight: 700;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 767px) {
+    .__abm_timer {
+        &_c3 {
+            font-size: 14px;
+        }
+
+        &_b1 {
+            margin: 0 12px;
+        }
+
+        &_b2 {
+            &::before,
+            &::after {
+                margin-left: 10px;
+            }
+        }
     }
 }
 
@@ -132,14 +155,35 @@ $caption-color: #2b455d;
         }
 
         &_b1 {
-            margin: 0 9px;
+            margin: 0 10px;
         }
 
         &_b2 {
+            height: 62px;
+            line-height: 60px;
+            width: 57px;
+            font-size: 34px;
+
             &::before,
             &::after {
-                margin-left: 6px;
+                margin-left: 8px;
+                width: 5px;
+                height: 5px;
             }
+
+            &::before {
+                top: 18px;
+            }
+
+            &::after {
+                bottom: 18px;
+            }
+        }
+
+        &_b3 {
+            font-size: 10px;
+            line-height: 10px;
+            margin-top: 6px;
         }
     }
 }
