@@ -73,6 +73,7 @@ gulp.task('js', function() {
             ],
             plugins: [
                 '@babel/plugin-proposal-class-properties',
+                'babel-plugin-loop-optimizer',
             ],
         }))
         .pipe(gulpIf(MODE === 'production', uglifyJS()))
