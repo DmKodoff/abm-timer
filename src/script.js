@@ -429,8 +429,8 @@ const declOfNum = (number, titles) => {
 };
 
 // функция создания нового элемента
-const newElement = (doc, parentElement, className) => {
-    const element = doc.createElement('div');
+const newElement = (parentElement, className) => {
+    const element = parentElement.ownerDocument.createElement('div');
     element.className = className;
     parentElement.appendChild(element);
     return element;
@@ -542,74 +542,96 @@ const formatText = (text, data) => {
     }, 1000);
 
 	class Timer {
-		element = null;
-		childrenElements = {};
+		container = null; // DOM элемент контейнера
+		childrenElements = {}; // все созданные дочерние элементы
 		dataInitialized = false;
 		zeroInitialized = true;
 
-        constructor (element) {
-            this.element = element;
+        static className = '__abm_timer'; // название css-класса контейнера
 
+        constructor (container) {
+            // сохраняем ссылку на контейнер
+            this.container = container;
+
+            // считываем опции с контейнера
+            this.updateOptions();
+
+            // создаём дочерние элементы
             this.build();
+
+            // стартуем таймер
             this.tick();
+
+            // устанавливаем флаг завершения инициализации
+            this.container.setAttribute('data-init', '1');
         }
 
-        build () {
-            let starts = this.element.getAttribute('data-starts') || '0 0 0 * * * *';
+        updateOptions () {
+            // считываем время последнего запуска
+            let starts = this.container.getAttribute('data-starts') || '0 0 0 * * * *';
+
             // если старый формат, преобразуем
             const startsValues = starts.split(' ');
             if (startsValues.length === 2) {
                 starts = '0 0 ' + startsValues[1] + ' * * ' + startsValues[0] + ' *';
             }
-            this.starts = parseCronExpression(starts);
 
-            this.interval = eval(this.element.getAttribute('data-interval') || 24 * 3600);
+            // парсим время последних запусков
+            this.startsSet = starts.split('|').map(s => parseCronExpression(s.trim()));
 
-            this.duration = eval(this.element.getAttribute('data-duration') || 0);
+            // парсим интервалы
+            let interval = this.container.getAttribute('data-interval') || (24 * 3600) + '';
+            this.intervalSet = interval.split('|').map(s => eval(s));
 
-            this.caption1 = this.element.getAttribute('data-caption1') || this.element.getAttribute('data-c1') || '';
-            this.caption2 = this.element.getAttribute('data-caption2') || this.element.getAttribute('data-c2') || '';
-            this.caption3 = this.element.getAttribute('data-caption3') || this.element.getAttribute('data-c3') || '';
-
-            this.offset = this.element.getAttribute('data-offset') || 0;
-
-            const days = this.element.getAttribute('data-days');
-            this.showDays = days === 'yes' || days === 'true' || days === '1';
-
-            const reload = this.element.getAttribute('data-reload');
-            this.reload = reload === 'yes' || reload === 'true' || reload === '1';
-
-            this.redirect = this.element.getAttribute('data-redirect');
-
-            // constructing the body
-            const c0 = newElement(doc, this.element, '__abm_timer_c0');
-            this.childrenElements['c0'] = c0;
-            const c1 = newElement(doc, c0, '__abm_timer_c1');
-            this.childrenElements['c1'] = c1;
-            c1.innerHTML = this.caption1 ? '...' : '';
-            const c2 = newElement(doc, c0, '__abm_timer_c2');
-            this.childrenElements['c2'] = c2;
-            c2.innerHTML = this.caption2 ? '...' : '';
-            const c3 = newElement(doc, c0, '__abm_timer_c3');
-            this.childrenElements['c3'] = c3;
-            c3.innerHTML = this.caption3 ? '...' : '';
-            const b0 = newElement(doc, this.element, '__abm_timer_b0');
-            this.childrenElements['b0'] = b0;
-            for (let j = 0; j <= 3; j++) {
-                const b1 = newElement(doc, b0, '__abm_timer_b1');
-                if (!this.showDays && j === 0) {
-                    b1.style.display = 'none';
-                }
-                this.childrenElements['b1_' + j] = b1;
-                const b2 = newElement(doc, b1, '__abm_timer_b2');
-                this.childrenElements['b2_' + j] = b2;
-                this.childrenElements['label_' + j] = newElement(doc, b1, '__abm_timer_b3');
-                this.childrenElements['d_' + j + '_1'] = newElement(doc, b2, '__abm_timer_b4');
-                this.childrenElements['d_' + j + '_2'] = newElement(doc, b2, '__abm_timer_b4');
+            // если количество стартов и интервалов не совпадает, кидаем ошибку
+            if (this.startsSet.length !== this.intervalSet.length) {
+                console.error('Количество стартов и интервалов не совпадает');
             }
 
-            // setting the done flag
-            this.element.setAttribute('data-init', '1');
+            this.duration = eval(this.container.getAttribute('data-duration') || 0);
+
+            this.caption1 = this.container.getAttribute('data-caption1') || this.container.getAttribute('data-c1') || '';
+            this.caption2 = this.container.getAttribute('data-caption2') || this.container.getAttribute('data-c2') || '';
+            this.caption3 = this.container.getAttribute('data-caption3') || this.container.getAttribute('data-c3') || '';
+
+            this.offset = this.container.getAttribute('data-offset') || 0;
+
+            const days = this.container.getAttribute('data-days') || 'yes';
+            this.showDays = days === 'yes' || days === 'true' || days === '1';
+
+            const reload = this.container.getAttribute('data-reload') || false;
+            this.reload = reload === 'yes' || reload === 'true' || reload === '1';
+
+            const targetOffset = this.container.getAttribute('data-target-offset') || 'auto';
+            this.targetOffset = targetOffset === 'auto' ? getTimezoneOffset() : parseInt(targetOffset, 10);
+
+            this.redirect = this.container.getAttribute('data-redirect');
+        }
+
+        build () {
+            // функция создания нового элемента внутри элементов контейнера
+            const add = (parent, id, classSuffix, content = '') => {
+                const element = newElement(this.childrenElements[parent] || this.container, Timer.className + '_' + classSuffix);
+                this.childrenElements[id] = element;
+                element.innerHTML = content;
+                return element;
+            };
+
+            add(null, 'c0', 'c0');
+            add('c0', 'c1', 'c1', this.caption1 ? '...' : '');
+            add('c0', 'c2', 'c2', this.caption2 ? '...' : '');
+            add('c0', 'c3', 'c3', this.caption3 ? '...' : '');
+            add(null, 'b0', 'b0');
+            for (let i = 0; i <= 3; i++) {
+                const b1 = add('b0', 'b1_' + i, 'b1');
+                if (!this.showDays && i === 0) {
+                    b1.style.display = 'none';
+                }
+                add('b1_' + i, 'b2_' + i, 'b2');
+                add('b1_' + i, 'label_' + i, 'b3');
+                add('b2_' + i, 'd_' + i + '_1', 'b4');
+                add('b2_' + i, 'd_' + i + '_2', 'b4');
+            }
         }
 
         setData () {
@@ -629,7 +651,16 @@ const formatText = (text, data) => {
             }
 
             // сколько времени назад был в последний раз назначен старт
-            let lastRun = cronLastRun(this.starts, loadedTime - offset * 60 * 1000);
+            let lastRun = false;
+            let startIndex = 0;
+            this.startsSet.forEach((start, index) => {
+                const l = cronLastRun(start, loadedTime - offset * 60 * 1000);
+                if (l < lastRun || lastRun === false) {
+                    lastRun = l;
+                    startIndex = index;
+                }
+            });
+            this.interval = this.intervalSet[startIndex];
 
             // если стартов ещё не было
             if (lastRun === false) {
@@ -644,8 +675,9 @@ const formatText = (text, data) => {
             this.timeLeft = this.interval - lastRun;
 
             // устанавливаем заголовки
+            const targetDate = new Date(loadedTime + this.timeLeft * 1000 + (getTimezoneOffset() - this.targetOffset) * 60 * 1000);
             const formatData = {
-                date: new Date(loadedTime + this.timeLeft * 1000),
+                date: targetDate,
                 duration: this.duration,
                 cityTime: getCityTime(),
             };
@@ -661,16 +693,16 @@ const formatText = (text, data) => {
         }
 
         update () {
-            let time_left = this.dataInitialized ? this.timeLeft : 0;
+            let timeLeft = this.dataInitialized ? this.timeLeft : 0;
 
             const timePassed = Math.floor(((new Date()).getTime() - loadedLocalTime) / 1000);
-            time_left -= timePassed;
+            timeLeft -= timePassed;
 
-            if (time_left < 0) {
-                time_left = 0;
+            if (timeLeft < 0) {
+                timeLeft = 0;
             }
 
-            let remains = time_left;
+            let remains = timeLeft;
             let days = Math.floor(remains / (3600 * 24));
             remains -= days * (3600 * 24);
             let hours = Math.floor(remains / 3600);
@@ -679,35 +711,39 @@ const formatText = (text, data) => {
             remains -= minutes * 60;
             let seconds = remains;
 
-            const days_label = this.dataInitialized ? declOfNum(days, ['день', 'дня', 'дней']) : '...';
-            const hours_label = this.dataInitialized ? declOfNum(hours, ['час', 'часа', 'часов']) : '...';
-            const minutes_label = this.dataInitialized ? declOfNum(minutes, ['минута', 'минуты', 'минут']) : '...';
-            const seconds_label = this.dataInitialized ? declOfNum(seconds, ['секунда', 'секунды', 'секунд']) : '...';
+            const daysText = this.dataInitialized ? declOfNum(days, ['день', 'дня', 'дней']) : '...';
+            const hoursText = this.dataInitialized ? declOfNum(hours, ['час', 'часа', 'часов']) : '...';
+            const minutesText = this.dataInitialized ? declOfNum(minutes, ['минута', 'минуты', 'минут']) : '...';
+            const secondsLabel = this.dataInitialized ? declOfNum(seconds, ['секунда', 'секунды', 'секунд']) : '...';
 
             days = ('0' + days).substr(-2);
             hours = ('0' + hours).substr(-2);
             minutes = ('0' + minutes).substr(-2);
             seconds = ('0' + seconds).substr(-2);
 
-            this.childrenElements['d_0_1'].innerHTML = this.dataInitialized ? days[0] : '';
-            this.childrenElements['d_0_2'].innerHTML = this.dataInitialized ? days[1] : '';
-            this.childrenElements['d_1_1'].innerHTML = this.dataInitialized ? hours[0] : '';
-            this.childrenElements['d_1_2'].innerHTML = this.dataInitialized ? hours[1] : '';
-            this.childrenElements['d_2_1'].innerHTML = this.dataInitialized ? minutes[0] : '';
-            this.childrenElements['d_2_2'].innerHTML = this.dataInitialized ? minutes[1] : '';
-            this.childrenElements['d_3_1'].innerHTML = this.dataInitialized ? seconds[0] : '';
-            this.childrenElements['d_3_2'].innerHTML = this.dataInitialized ? seconds[1] : '';
+            const setContent = (id, value) => {
+                this.childrenElements[id].innerHTML = this.dataInitialized ? value : '';
+            };
 
-            this.childrenElements['label_0'].innerHTML = days_label;
-            this.childrenElements['label_1'].innerHTML = hours_label;
-            this.childrenElements['label_2'].innerHTML = minutes_label;
-            this.childrenElements['label_3'].innerHTML = seconds_label;
+            setContent('d_0_1', days[0]);
+            setContent('d_0_2', days[1]);
+            setContent('d_1_1', hours[0]);
+            setContent('d_1_2', hours[1]);
+            setContent('d_2_1', minutes[0]);
+            setContent('d_2_2', minutes[1]);
+            setContent('d_3_1', seconds[0]);
+            setContent('d_3_2', seconds[1]);
 
-            if (time_left > 0 && APIState !== 0) {
+            setContent('label_0', daysText);
+            setContent('label_1', hoursText);
+            setContent('label_2', minutesText);
+            setContent('label_3', secondsLabel);
+
+            if (timeLeft > 0 && APIState !== 0) {
                 this.zeroInitialized = false;
             }
 
-            return time_left;
+            return timeLeft;
         }
 
         tick () {
@@ -720,9 +756,9 @@ const formatText = (text, data) => {
             } else {
                 if ((this.reload || this.redirect) && this.zeroInitialized === false) {
                     if (this.reload) {
-                        doc.location.reload();
+                        location.reload();
                     } else {
-                        doc.location.href = this.redirect;
+                        location.href = this.redirect;
                     }
                 }
             }
@@ -730,7 +766,7 @@ const formatText = (text, data) => {
     }
 
     const initAllTimers = () => {
-        const timerElements = doc.querySelectorAll('.__abm_timer');
+        const timerElements = doc.querySelectorAll('.' + Timer.className);
         for (let i = 0; i < timerElements.length; i++) {
             const init = timerElements[i].getAttribute('data-init');
             if (!init) {
